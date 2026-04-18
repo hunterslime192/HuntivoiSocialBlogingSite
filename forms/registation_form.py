@@ -1,5 +1,3 @@
-
-from email_validator import validate_email as validate_email_format, EmailNotValidError
 from flask_wtf import *
 from wtforms import *
 from wtforms.validators import DataRequired, Email

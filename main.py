@@ -16,14 +16,14 @@ app.config.update(
     MAIL_PORT=587,
     MAIL_USE_TLS=True,
     MAIL_USERNAME='huntoi.dontwtitemepls@internet.ru',
-    MAIL_PASSWORD='Secret >:)',
-    MAIL_DEFAULT_SENDER=('HaBlog', 'huntoi.dontwtitemepls@internet.ru')
+    MAIL_PASSWORD='TLPnUjvnGvQci0yTFV4Q',
+    MAIL_DEFAULT_SENDER=('HuBlog', 'huntoi.dontwtitemepls@internet.ru')
 )
 mail = Mail(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
-app.config['SECRET_KEY'] = 'secret >:)'
+app.config['SECRET_KEY'] = 'hunter_slime_key'
 db_session.global_init("db/all_date.db")
 
 def send_confirmation_email(user_id):
@@ -196,4 +196,5 @@ def logout():
     return redirect("/")
 
 if __name__ == '__main__':
-    app.run(port=8080, host='127.0.0.1')
+     app.run(port=8080, host='127.0.0.1')
+
