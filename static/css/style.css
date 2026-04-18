@@ -1,0 +1,17 @@
+.buttons {
+    position: absolute;
+    right: 0px;
+}
+
+.container {
+    position: absolute;
+    top: 100px;
+    left: 75px;
+}
+
+.site_name{
+    color: #587765;
+    position: absolute;
+    left: 0px;
+}
+
