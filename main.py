@@ -10,7 +10,10 @@ import secrets
 from flask_mail import Mail, Message
 import os
 db_path = os.path.join(os.path.dirname(__file__), 'db', 'all_date.db')
+<<<<<<< HEAD
 
+=======
+>>>>>>> 7019aec4965befa640b063ca11df1bb49c771b41
 
 app = Flask(__name__)
 
@@ -19,7 +22,7 @@ app.config.update(
     MAIL_PORT=587,
     MAIL_USE_TLS=True,
     MAIL_USERNAME='huntoi.dontwtitemepls@internet.ru',
-    MAIL_PASSWORD='TLPnUjvnGvQci0yTFV4Q',
+    MAIL_PASSWORD='secret >:)',
     MAIL_DEFAULT_SENDER=('HuBlog', 'huntoi.dontwtitemepls@internet.ru')
 )
 mail = Mail(app)
