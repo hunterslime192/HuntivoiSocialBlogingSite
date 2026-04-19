@@ -7,44 +7,45 @@ from forms.registation_form import RegisterForm
 from forms.login_form import LoginForm
 from forms.post_form import PostsForm
 import secrets
-from flask_mail import Mail, Message
 import os
 db_path = os.path.join(os.path.dirname(__file__), 'db', 'all_date.db')
 
 
 app = Flask(__name__)
 
-app.config.update(
-    MAIL_SERVER='smtp.mail.ru',
-    MAIL_PORT=587,
-    MAIL_USE_TLS=True,
-    MAIL_USERNAME='huntoi.dontwtitemepls@internet.ru',
-    MAIL_PASSWORD='TLPnUjvnGvQci0yTFV4Q',
-    MAIL_DEFAULT_SENDER=('HuBlog', 'huntoi.dontwtitemepls@internet.ru')
-)
-mail = Mail(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
 app.config['SECRET_KEY'] = 'hunter_slime_key'
 db_session.global_init(db_path)
 
-def send_confirmation_email(user_id):
-    token = secrets.token_urlsafe(32)
-    db_sess = db_session.create_session()
-    user = db_sess.query(User).get(user_id)
-    if not user:
-        return
-    user.confirmation_token = token # type: ignore
-    db_sess.commit()
+def notify_admin(user):
+    try:
+        token = secrets.token_urlsafe(32)
+        db_sess = db_session.create_session()
+        user = db_sess.query(User).get(user.id)
+        if not user:
+            return
 
+        user.confirmation_token = token # type: ignore
+        db_sess.commit()
 
-    confirm_url = url_for('confirm_email', token=token, _external=True)
-    msg = Message("Подтвердите ваш email", recipients=[user.email]) # type: ignore
-    msg.body = f"Перейдите по ссылке, чтобы подтвердить почту: {confirm_url}"
-    mail.send(msg)
+        confirm_url = url_for('confirm_email', token=token, _external=True)
 
-    db_sess.close()
+        print("НОВАЯ РЕГИСТРАЦИЯ — ТРЕБУЕТСЯ ПОДТВЕРЖДЕНИЕ")
+        print(f"Имя: {user.nickname}")
+        print(f"Email: {user.email}")
+        print(f"Токен: {token}")
+        print(f"Ссылка для подтверждения: {confirm_url}")
+        
+    except Exception as e:
+        print("Ошибка в notify_admin:", str(e))
+    finally:
+        db_sess.close()
+ 
+@app.route("/notify_user")       
+def notify_user():
+    return "Для подтверждения почты ваш запрос на регистрацию отправлен админу\nв скором времени он вам отправит ссылку для поодтверждения почты"
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -112,7 +113,7 @@ def reqister():
         db_sess.commit()
         user_id = user.id
         db_sess.close()
-        send_confirmation_email(user_id)
+        notify_admin(user)
         return redirect('/login')  
     return render_template('register.html', title='Регистрация', form=form)
 
