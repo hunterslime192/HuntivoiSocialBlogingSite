@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Страница {{ user.nickname }}</h1>
+
+{% if current_user.is_authenticated and current_user.nickname == user.nickname %}
+    <a href="/post_a_post" class="btn btn-secondary">Написать пост</a>
+    <a href="/user/edit" class="btn btn-info">Изменить информацию</a>
+{% endif %}
+
+{% if current_user.is_authenticated %}
+    {% if not user.page_are_private and current_user.nickname != user.nickname %}
+        {% if not sub %}
+            <a href="/subscritions/add/{{ user.nickname }}" class="btn btn-success">Подписаться</a>
+        {% else %}
+            <a href="/subscritions/del/{{ user.nickname }}" class="btn btn-danger">Отписаться</a>
+        {% endif %}
+    {% elif current_user.nickname == user.nickname%}
+        <h3>Информация о себе:</h3>
+        <div class="alert alert-info" role="alert">
+            {{ user.message_for_other or "Пока нет информации" }}
+        </div>  
+    {% endif %}
+{% endif %}
+
+<h2>Посты {{ user.nickname }}:</h2>
+
+{% if (posts and not user.page_are_private) or current_user.nickname == user.nickname%}
+    {% for item in posts %}
+        {% if not item.is_private or current_user.nickname == user.nickname%}
+            <div class="col-md-6 border rounded mb-3">
+                <h2>{{ item.label }}</h2>
+                {% if item.sublabel %}
+                    <h3>{{ item.sublabel }}</h3>
+                {% endif %}
+                {% if item.additions %}
+                    <img src="{{ item.additions }}" alt="Изображение к посту" style="max-width: 300px;">
+                {% endif %}
+                <div>{{ item.text }}</div>
+                <p><b>Автор</b>: {{ item.writer }}</p>
+                {% if (current_user.is_authenticated and current_user.nickname == item.writer) or (current_user.position_in_access == "Hunt" or current_user.position_in_access == "Admin") %}
+                    <div>
+                        <a href="/edit_post/{{ item.id }}" class="btn btn-warning">Изменить</a>
+                        <a href="/post_delete/{{ item.id }}" class="btn btn-danger">Удалить</a>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% endfor %}
+{% else %}
+    <div class="col-md-6 border rounded">
+        <h2>Пока постов нет или они скрыты</h2>
+    </div>
+{% endif %}
+{% endblock %}

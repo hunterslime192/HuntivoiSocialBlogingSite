@@ -10,12 +10,13 @@ class User(SqlAlchemyBase, UserMixin):
 
     id = sqlalchemy.Column(sqlalchemy.Integer, 
                            primary_key=True, autoincrement=True)
-    nickname = sqlalchemy.Column(sqlalchemy.String, nullable=True)
-    age = sqlalchemy.Column(sqlalchemy.INTEGER, nullable=True)
+    nickname = sqlalchemy.Column(sqlalchemy.String, unique=True)
+    message_for_other = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     position_in_access = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     email = sqlalchemy.Column(sqlalchemy.String, 
-                              index=True, unique=True, nullable=True)
-    password = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+                              index=True, unique=True)
+    password = sqlalchemy.Column(sqlalchemy.String)
+    page_are_private = sqlalchemy.Column(sqlalchemy.BOOLEAN, default=False)
     modified_date = sqlalchemy.Column(sqlalchemy.DateTime, 
                                       default=datetime.datetime.now)
     
@@ -23,6 +24,7 @@ class User(SqlAlchemyBase, UserMixin):
     confirmation_token = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     
     posts = orm.relationship("Posts", back_populates='users')
+    subscriptions = orm.relationship("Subs", back_populates='users')
     
     def set_password(self, password):
         self.password = password

@@ -5,6 +5,7 @@
 {% if current_user.is_authenticated %}
     <a href="post_a_post" class="btn btn-secondary">Написать пост</a>
 {% endif %}
+<h2>Последние посты:</h2>
 {% for item in posts%}
 <div class="col-md6 border rounded">
     <h2>{{item.label}}</h2>
@@ -13,11 +14,14 @@
         {{item.sublabel}}
     </h3>
     {% endif %}
+    {%if item.additions%}
+        <img src="{{ item.additions }}" alt="Изображение к посту" style="max-width: 300px;">
+    {% endif %}
     <div>
         {{item.text}}
     </div>
-    <p><b>Автор</b>: {{item.writer}}</p>
-    {% if current_user.is_authenticated and current_user.nickname == item.writer%}
+    <p><b>Автор</b>: <a href="user/{{item.writer}}" title="Ссылка на автора">{{item.writer}}</a></p>
+    {% if (current_user.is_authenticated and current_user.nickname == item.writer) or (current_user.position_in_access == "Hunt" or current_user.position_in_access == "Admin")%}
     <div>
         <a href="/edit_post/{{ item.id }}" class="btn btn-warning">
             Изменить
@@ -26,7 +30,7 @@
             Удалить
         </a>
     </div>
-{% endif %}
+    {% endif %}
 </div>
 {% endfor %}
 {% endblock %}

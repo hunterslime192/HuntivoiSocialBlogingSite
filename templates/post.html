@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Добавление поста</h1>
+<h1>Добавление/Изменение поста</h1>
 <form action="" method="post">
     {{ form.hidden_tag() }}
     <p>
@@ -17,6 +17,15 @@
         {{ form.sublabel.label }}<br>
         {{ form.sublabel(class="form-control") }}<br>
         {% for error in form.sublabel.errors %}
+            <p class="alert alert-danger" role="alert">
+                {{ error }}
+            </p>
+        {% endfor %}
+    </p>
+    <p>
+        {{ form.addition.label }}<br>
+        {{ form.addition(class="form-control") }}<br>
+        {% for error in form.addition.errors %}
             <p class="alert alert-danger" role="alert">
                 {{ error }}
             </p>

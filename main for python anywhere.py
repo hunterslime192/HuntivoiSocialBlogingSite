@@ -1,11 +1,13 @@
 from data import db_session
 from data.users import User
 from data.posts import Posts
+from data.subs import Subs
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from flask import *
 from forms.registation_form import RegisterForm
 from forms.login_form import LoginForm
 from forms.post_form import PostsForm
+from forms.edit_user_form import EditUserForm
 import secrets
 import os
 db_path = os.path.join(os.path.dirname(__file__), 'db', 'all_date.db')
@@ -77,10 +79,14 @@ def index():
     posts = db_sess.query(Posts)
     if current_user.is_authenticated:
         posts = db_sess.query(Posts).filter(
-        (Posts.writer == current_user.nickname) | (Posts.is_private != True))
+        (Posts.writer == current_user.nickname) | (Posts.is_private == False))
     else:
-        posts = db_sess.query(Posts).filter(Posts.is_private != True)
-    return render_template("index.html", posts=posts)
+        posts = db_sess.query(Posts).join(
+            User, User.nickname == Posts.writer
+        ).filter(
+            Posts.is_private == False,
+            User.page_are_private == False)
+    return render_template("index.html", posts=posts[::-1])
 
 
 
@@ -114,17 +120,21 @@ def reqister():
         user_id = user.id
         db_sess.close()
         notify_admin(user)
-        return redirect('/login')  
+        
+        return redirect('/notify_user')  
     return render_template('register.html', title='Регистрация', form=form)
 
 @app.route('/confirm_email/<token>') # pyright: ignore[reportArgumentType]
 def confirm_email(token):
     db_sess = db_session.create_session()
-    user = db_sess.query(User).filter(User.confirmation_token == token).first()
+    user = db_sess.query(User).filter(
+        User.confirmation_token == token).first()
+    sub = Subs(subscriber=user.nickname) # type: ignore
     if user:
         user.confirmed = True # type: ignore
         user.confirmation_token = None # type: ignore
         db_sess.merge(user)
+        db_sess.add(sub)
         db_sess.commit()
         db_sess.close()
         return "Email подтверждён можете зайти на ваш аккаунт"
@@ -133,7 +143,7 @@ def confirm_email(token):
     
 @app.route('/post_a_post',  methods=['GET', 'POST'])
 @login_required
-def add_news():
+def add_post():
     form = PostsForm()
     if form.validate_on_submit():
         db_sess = db_session.create_session()
@@ -151,15 +161,17 @@ def add_news():
 
 @app.route('/edit_post/<int:id>', methods=['GET', 'POST'])
 @login_required
-def edit_news(id):
+def edit_post(id):
     form = PostsForm()
     if request.method == "GET":
         db_sess = db_session.create_session()
         posts = db_sess.query(Posts).filter(Posts.id == id,
-                                          Posts.writer == current_user.nickname).first()
+                                          Posts.writer == current_user.nickname
+                                          ).first()
         if posts:
             form.label.data = posts.label # type: ignore
             form.sublabel.data = posts.sublabel # type: ignore
+            form.addition.data = posts.additions # type: ignore
             form.content.data = posts.text # type: ignore
             form.is_private.data = posts.is_private # type: ignore
         else:
@@ -167,11 +179,14 @@ def edit_news(id):
     if form.validate_on_submit():
         db_sess = db_session.create_session()
         posts = db_sess.query(Posts).filter(Posts.id == id,
-                                          Posts.writer == current_user.nickname).first()
+                                          Posts.writer == current_user.nickname
+                                          ).first()
         if posts:
             posts.label = form.label.data # type: ignore
             posts.sublabel = form.sublabel.data # type: ignore
+            posts.additions = form.addition.data # type: ignore
             posts.text = form.content.data # type: ignore
+            posts.is_private = form.is_private.data# type: ignore
             db_sess.commit()
             return redirect('/')
         else:
@@ -182,17 +197,115 @@ def edit_news(id):
 
 @app.route('/post_delete/<int:id>', methods=['GET', 'POST'])
 @login_required
-def news_delete(id):
+def post_delete(id):
     db_sess = db_session.create_session()
-    posts = db_sess.query(Posts).filter(Posts.id == id,
-                                      Posts.writer == current_user.nickname).first()
-    if posts:
-        db_sess.delete(posts)
+    post = db_sess.query(Posts).filter(Posts.id == id,
+                                      Posts.writer == current_user.nickname
+                                      ).first()
+    if post:
+        db_sess.delete(post)
         db_sess.commit()
     else:
         abort(404)
     return redirect('/')
 
+@app.route('/user')
+@login_required
+def your_profile():
+    return redirect(f'/user/{current_user.nickname}')
+
+@app.route('/user/<string:name>') # type: ignore
+def user_profile(name):
+    db_sess = db_session.create_session()
+    posts = db_sess.query(Posts).filter(Posts.writer == name)
+    user = db_sess.query(User).filter(User.nickname == name).first()
+    if not user:
+        abort(404)
+
+    is_subscribed = False
+    if current_user.is_authenticated:
+        sub = db_sess.query(Subs).filter(Subs.subscriber == current_user.nickname).first() # type: ignore
+        if sub and sub.subscriptions: # type: ignore
+            is_subscribed = name in sub.subscriptions.split()
+    return render_template('user_page.html', posts=posts[::-1], user=user, sub=is_subscribed)
+    
+@app.route('/user/edit', methods=['GET', 'POST']) # type: ignore
+@login_required
+def user_edit_profile():
+    try:
+        form = EditUserForm()
+        if request.method == "GET":
+            db_sess = db_session.create_session()
+            user = db_sess.query(User).filter(User.nickname == current_user.nickname).first()
+        
+            form.message.data = user.message_for_other # type: ignore
+            form.is_private.data = user.page_are_private # type: ignore
+        if form.validate_on_submit():
+            db_sess = db_session.create_session()
+            user = db_sess.query(User).filter(User.nickname == current_user.nickname).first()
+            user.message_for_other = form.message.data # type: ignore
+            user.page_are_private = form.is_private.data # type: ignore
+            db_sess.commit()
+            return redirect('/user')
+    except Exception as e:
+        return render_template('user_edit.html',
+                           title = 'Редактирование профиля', 
+                           form=form, message="Что-то пошло не так")
+    return render_template('user_edit.html',
+                           title = 'Редактирование профиля', 
+                           form=form) 
+
+@app.route('/subscritions/add/<string:name>', methods=['GET', 'POST']) # type: ignore
+@login_required
+def add_sub(name):
+    db_sess = db_session.create_session()
+    sub = db_sess.query(Subs).filter(Subs.subscriber == current_user.nickname).first() # type: ignore
+    try: 
+        list_of_subs = sub.subscriptions.split()# type: ignore
+        list_of_subs.append(name)
+        sub.subscriptions = " ".join(list_of_subs) # type: ignore
+        db_sess.commit()
+        return redirect(f'/user/{name}')
+    except Exception as e:
+        return "Пошло что-то не так. Повторите ещё раз."
+    
+@app.route('/subscritions/del/<string:name>', methods=['GET', 'POST']) # type: ignore
+@login_required
+def del_sub(name):
+    db_sess = db_session.create_session()
+    sub = db_sess.query(Subs).filter(Subs.subscriber == current_user.nickname).first() # type: ignore
+    try: 
+        list_of_subs = sub.subscriptions.split()# type: ignore
+        list_of_subs.remove(name)
+        sub.subscriptions = " ".join(list_of_subs) # type: ignore
+        db_sess.commit()
+        return redirect(f'/user/{name}')
+    except Exception as e:
+        return "Пошло что-то не так. Повторите ещё раз."
+    
+@app.route('/subscritions/delall', methods=['GET', 'POST']) # type: ignore
+@login_required
+def delall_subs():
+    db_sess = db_session.create_session()
+    sub = db_sess.query(Subs).filter(Subs.subscriber == current_user.nickname).first() # type: ignore
+    try: 
+        sub.subscriptions = "" # type: ignore
+        db_sess.commit()
+        return redirect(f'/subscritions')
+    except Exception as e:
+        return "Пошло что-то не так. Повторите ещё раз."
+
+@app.route('/subscritions') # type: ignore
+@login_required
+def subs():
+    db_sess = db_session.create_session()
+    sub = db_sess.query(Subs).filter(Subs.subscriber == current_user.nickname).first()
+    if sub.subscriptions: # type: ignore
+        list_of_subs = sub.subscriptions.split() # type: ignore
+        return render_template('subscriptions.html', header="Подписки", subs=list_of_subs)
+    else:
+        return render_template('subscriptions.html', header="Подписки", subs=[])
+     
 @app.route('/logout')
 @login_required
 def logout():
