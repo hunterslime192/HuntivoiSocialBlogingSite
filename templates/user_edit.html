@@ -2,7 +2,7 @@
 
 {% block content %}
 <h1>Изменение информации о пользователе</h1>
-<form action="" method="post">
+<form action="" method="post" enctype="multipart/form-data">
     {{ form.hidden_tag() }}
     <p>
         {{ form.message.label }}<br>
@@ -12,6 +12,16 @@
                 {{ error }}
             </p>
         {% endfor %}
+    </p>
+    <p>
+        {{ form.avatar.label(class="form-label") }}
+        {{ form.avatar(class="form-control") }}
+        <small class="form-text text-muted">Загрузите изображение для аватара</small>
+    </p>
+        <p>
+        {{ form.avatar_url.label(class="form-label") }}
+        {{ form.avatar_url(class="form-control") }}
+        <small class="form-text text-muted">Или вставьте ссылку</small>
     </p>
     <p>{{ form.is_private() }} {{ form.is_private.label }}</p>
     <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>

@@ -1,6 +1,7 @@
 .buttons {
     position: absolute;
     right: 0px;
+    top: 0px;
 }
 
 .container {
@@ -13,4 +14,23 @@
     color: #587765;
     position: absolute;
     left: 0px;
+    top: 0px;
+}
+
+.btn {
+    border: none;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+.profile-link {
+    background-color: #343a40;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    text-decoration: none;
+}
+
+.profile-link:hover {
+    background-color: #212529;
 }

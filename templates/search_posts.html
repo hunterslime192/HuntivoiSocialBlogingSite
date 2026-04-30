@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Поиск постов</h1>
+<form action="" method="post">
+    {{ form.hidden_tag() }}
+    <p>
+        {{ form.label.label }}<br>
+        {{ form.label(class="form-control") }}<br>
+        {% for error in form.label.errors %}
+            <p class="alert alert-danger" role="alert">
+                {{ error }}
+            </p>
+        {% endfor %}
+    </p>
+    <p>
+        {{ form.sublabel.label }}<br>
+        {{ form.sublabel(class="form-control") }}<br>
+        {% for error in form.sublabel.errors %}
+            <p class="alert alert-danger" role="alert">
+                {{ error }}
+            </p>
+        {% endfor %}
+    </p>
+    <p>
+        {{ form.content.label }}<br>
+        {{ form.content(class="form-control") }}<br>
+        {% for error in form.content.errors %}
+            <p content="alert alert-danger" role="alert">
+                {{ error }}
+            </p>
+        {% endfor %}
+    </p>
+    <p>
+        {{ form.writer.label }}<br>
+        {{ form.writer(class="form-control") }}<br>
+        {% for error in form.writer.errors %}
+            <p content="alert alert-danger" role="alert">
+                {{ error }}
+            </p>
+        {% endfor %}
+    </p>
+    <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
+    {{message}}
+</form>
+{% if posts %}
+{%for post in posts%}
+<div class="col-md6 border rounded">
+    <h2>{{post.label}}</h2>
+    {%if post.sublabel%}
+    <h3>
+        {{post.sublabel}}
+    </h3>
+    {% endif %}
+    {% if post.additions %}
+    {% set url = post.additions | lower %}
+
+    {% if url.endswith('.jpg') or url.endswith('.jpeg') or url.endswith('.png') or url.endswith('.gif') %}
+            <div class="mb-3">
+                <img src="{{ post.additions }}" alt="Медиа к посту" class="img-fluid rounded" style="max-height: 400px;">
+            </div>
+    
+    {% elif url.endswith('.mp4') or url.endswith('.webm') or url.endswith('.mov') %}
+            <video controls class="img-fluid rounded" style="max-height: 400px;">
+                <source src="{{ post.additions }}" type="video/mp4">
+                Ваш браузер не поддерживает видео.
+            </video>
+    {% elif url.endswith('.mp3') or url.endswith('.wav') or url.endswith('.ogg') %}
+            <audio controls class="w-100">
+                <source src="{{ post.additions }}" type="audio/mpeg">
+                Ваш браузер не поддерживает аудио.
+            </audio>
+    {% endif %}
+    {% endif %}
+    <div>
+        {{post.text}}
+    </div>
+    {% set avatar = avatars.get(post.writer) %}
+    {% if avatar %}
+        <p><a href="user/{{post.writer}}" title="Ссылка на автора"><img src="{{ avatar }}" alt="Аватар" style="width: 40px; height: 40px; object-fit: cover;"> {{post.writer}} </a></p>
+    {% else %}
+        <p><a href="user/{{post.writer}}" title="Ссылка на автора">{{post.writer}}</a></p>
+    {% endif %}
+    {% if (current_user.is_authenticated and current_user.nickname == post.writer) or (current_user.position_in_access == "Hunt" or current_user.position_in_access == "Admin")%}
+    <div>
+        <a href="/edit_post/{{ post.id }}" class="btn btn-warning">
+            Изменить
+        </a>
+        <a href="/post_delete/{{ post.id }}" class="btn btn-danger">
+            Удалить
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

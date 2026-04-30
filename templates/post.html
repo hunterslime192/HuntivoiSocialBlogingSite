@@ -2,7 +2,7 @@
 
 {% block content %}
 <h1>Добавление/Изменение поста</h1>
-<form action="" method="post">
+<form action="" method="post" enctype="multipart/form-data">
     {{ form.hidden_tag() }}
     <p>
         {{ form.label.label }}<br>
@@ -23,9 +23,20 @@
         {% endfor %}
     </p>
     <p>
-        {{ form.addition.label }}<br>
-        {{ form.addition(class="form-control") }}<br>
-        {% for error in form.addition.errors %}
+        {{ form.media_file.label(class="form-label") }}
+        {{ form.media_file(class="form-control") }}
+        <small class="form-text text-muted">Загрузите изображение, видео или аудио</small>
+        {% for error in form.media_file.errors %}
+            <p class="alert alert-danger" role="alert">
+                {{ error }}
+            </p>
+        {% endfor %}
+    </p>
+        <p>
+        {{ form.media_url.label(class="form-label") }}
+        {{ form.media_url(class="form-control") }}
+        <small class="form-text text-muted">Или вставьте ссылку</small>
+        {% for error in form.media_file.errors %}
             <p class="alert alert-danger" role="alert">
                 {{ error }}
             </p>

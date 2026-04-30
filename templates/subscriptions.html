@@ -7,10 +7,10 @@
 {% for item in subs%}
 <div class="col-md6 border rounded">
     <h2>{{item}}</h2>
-    <a href="user/{{item}}"><h4>Ссылка на человека</h4></a>
+    <a href="/user/{{item}}"><h4>Ссылка на человека</h4></a>
 </div>
 {% endfor %}
 {% else %}
-<h2>у вас пока нет подписок</h2>
+<h2>У вас пока нет подписок</h2>
 {% endif %}
 {% endblock %}

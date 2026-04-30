@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Поиск людей по имени</h1>
+<form action="" method="post">
+    {{ form.hidden_tag() }}
+    <p>
+        {{ form.name.label }}<br>
+        {{ form.name(class="form-control") }}<br>
+        {% for error in form.name.errors %}
+            <p class="alert alert-danger" role="alert">
+                {{ error }}
+            </p>
+        {% endfor %}
+    </p>
+    <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
+    {{message}}
+</form>
+{% if users %}
+<h2>Результаты поиска:</h2>
+{%for user in users%}
+<div class="col-md6 border rounded">
+    <h2>{{user.nickname}}</h2>
+    <a href="/user/{{user.nickname}}"><h4>Ссылка на человека</h4></a>
+<div>
+{%endfor%}
+{%endif%}
+{% endblock %}

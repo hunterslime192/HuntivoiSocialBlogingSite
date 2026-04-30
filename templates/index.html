@@ -14,13 +14,33 @@
         {{item.sublabel}}
     </h3>
     {% endif %}
-    {%if item.additions%}
-        <img src="{{ item.additions }}" alt="Изображение к посту" style="max-width: 300px;">
+    {% if item.additions %}
+    {% set url = item.additions | lower %}
+
+    {% if url.endswith('.jpg') or url.endswith('.jpeg') or url.endswith('.png') or url.endswith('.gif') %}
+            <img src="{{ item.additions }}" alt="Медиа к посту" class="img-fluid rounded" style="max-height: 400px;">
+    
+    {% elif url.endswith('.mp4') or url.endswith('.webm') or url.endswith('.mov') %}
+            <video controls class="img-fluid rounded" style="max-height: 400px;">
+                <source src="{{ item.additions }}" type="video/mp4">
+                Ваш браузер не поддерживает видео.
+            </video>
+    {% elif url.endswith('.mp3') or url.endswith('.wav') or url.endswith('.ogg') %}
+            <audio controls class="w-100">
+                <source src="{{ item.additions }}" type="audio/mpeg">
+                Ваш браузер не поддерживает аудио.
+            </audio>
+    {% endif %}
     {% endif %}
     <div>
         {{item.text}}
     </div>
-    <p><b>Автор</b>: <a href="user/{{item.writer}}" title="Ссылка на автора">{{item.writer}}</a></p>
+    {% set avatar = avatars.get(item.writer) %}
+    {% if avatar %}
+        <p><a href="user/{{item.writer}}" title="Ссылка на автора"><img src="{{ avatar }}" alt="Аватар" style="width: 40px; height: 40px; object-fit: cover;"> {{item.writer}} </a></p>
+    {% else %}
+        <p><a href="user/{{item.writer}}" title="Ссылка на автора">{{item.writer}}</a></p>
+    {% endif %}
     {% if (current_user.is_authenticated and current_user.nickname == item.writer) or (current_user.position_in_access == "Hunt" or current_user.position_in_access == "Admin")%}
     <div>
         <a href="/edit_post/{{ item.id }}" class="btn btn-warning">
