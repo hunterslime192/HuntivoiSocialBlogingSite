@@ -3,14 +3,33 @@
 {% block content %}
 <h1>Подписки</h1>
 {% if subs %}
-<a class="btn btn-danger" href="/subscritions/delall" title="Серьёзно, удаляет все подписки">Удалить все подписки</a>
-{% for item in subs%}
-<div class="col-md6 border rounded">
-    <h2>{{item}}</h2>
-    <a href="/user/{{item}}"><h4>Ссылка на человека</h4></a>
+<div class="mt-4">
+    <form action="/subscritions/delall" method="post">
+        <button type="submit" class="btn btn-danger">Очистить все подписки</button>
+    </form>
 </div>
+{% for nickname in subs%}
+<div class="card d-flex flex-row align-items-center p-3">
+            {% set avatar = avatars.get(nickname) %}
+            {% if avatar %}
+                <img src="{{ avatar }}" alt="Аватар" class="border rounded" style="width: 100px; height: 100px; object-fit: cover;">
+            {% endif %}
+
+            <div class="flex-grow-1">
+                <h5 class="mb-0">{{ nickname }}</h5>
+                <a href="/user/{{ nickname }}" class="text-decoration-none text-muted">Перейти в профиль</a>
+            </div>
+
+            <div>
+                <form action="/subscritions/del/{{ nickname }}" method="post" style="display: inline;">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm">Отписаться</button>
+                </form>
+            </div>
+        </div>
+    </div>
 {% endfor %}
 {% else %}
-<h2>У вас пока нет подписок</h2>
+<p class="text-muted">У вас пока нет подписок.</p>
 {% endif %}
 {% endblock %}

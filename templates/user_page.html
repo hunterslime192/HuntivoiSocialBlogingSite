@@ -16,7 +16,10 @@
         {% if not sub %}
             <a href="/subscritions/add/{{ user.nickname }}" class="btn btn-success">Подписаться</a>
         {% else %}
-            <a href="/subscritions/del/{{ user.nickname }}" class="btn btn-danger">Отписаться</a>
+            <form action="/subscritions/del/{{ user.nickname }}" method="post" style="display: inline;">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button type="submit" class="btn btn-danger">Отписаться</button>
+            </form>
         {% endif %}
     {% elif current_user.nickname == user.nickname%}
         <h3>Информация о себе:</h3>

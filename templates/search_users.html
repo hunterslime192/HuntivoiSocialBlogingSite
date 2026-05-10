@@ -18,11 +18,23 @@
 </form>
 {% if users %}
 <h2>Результаты поиска:</h2>
-{%for user in users%}
-<div class="col-md6 border rounded">
-    <h2>{{user.nickname}}</h2>
-    <a href="/user/{{user.nickname}}"><h4>Ссылка на человека</h4></a>
-<div>
-{%endfor%}
+{% for user in users %}
+<div class="card d-flex flex-row align-items-center p-3">
+            {% if user.avatar %}
+                <img src="{{ user.avatar }}" alt="Аватар" class="border rounded" style="width: 100px; height: 100px; object-fit: cover;">
+            {% endif %}
+
+            <div class="flex-grow-1">
+                <h5 class="mb-0">{{ user.nickname }}</h5>
+                <div class="alert alert-info" role="alert">
+                <h6>
+                {{ user.message_for_other or "Пока нет информации" }}
+                </h6> 
+                </div> 
+                <a href="/user/{{ user.nickname }}" class="text-decoration-none text-muted">Перейти в профиль</a>
+            </div>
+        </div>
+    </div>
+{% endfor %}
 {%endif%}
 {% endblock %}

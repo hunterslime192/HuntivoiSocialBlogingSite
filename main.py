@@ -11,6 +11,7 @@ from forms.edit_user_form import EditUserForm
 from forms.search_user_form import SearchUserForm
 from forms.search_post_form import SearchPostsForm
 import secrets
+import uuid
 from flask_mail import Mail, Message
 import os
 from werkzeug.utils import secure_filename
@@ -27,7 +28,7 @@ app.config.update(
     MAIL_PORT=587,
     MAIL_USE_TLS=True,
     MAIL_USERNAME='huntoi.dontwtitemepls@internet.ru',
-    MAIL_PASSWORD='Secret >:)',
+    MAIL_PASSWORD='TLPnUjvnGvQci0yTFV4Q',
     MAIL_DEFAULT_SENDER=('HuBlog', 'huntoi.dontwtitemepls@internet.ru')
 )
 mail = Mail(app)
@@ -173,7 +174,8 @@ def add_post():
         if form.media_file.data:
             file = form.media_file.data
             if allowed_file(file.filename):
-                filename = secure_filename(f"{current_user.nickname}_{file.filename}")
+                name, ext = os.path.splitext(file.filename)
+                filename = secure_filename(f"{current_user.nickname}_{uuid.uuid4().hex}{ext}")
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename) # type: ignore
                 file.save(filepath)
                 media_path = f"/static/uploads/{filename}"
@@ -215,7 +217,7 @@ def edit_post(id):
         post = db_sess.query(Posts).filter(Posts.id == id,
                                           Posts.writer == current_user.nickname
                                           ).first()
-        media_path = None
+        media_path = post.additions # type: ignore
         if form.media_file.data:
             file = form.media_file.data
             if allowed_file(file.filename):
@@ -223,7 +225,8 @@ def edit_post(id):
                     old_path = os.path.join(app.root_path, post.additions[1:]) # type: ignore
                     if os.path.exists(old_path):
                         os.remove(old_path)
-                filename = secure_filename(f"{current_user.nickname}_{file.filename}")
+                name, ext = os.path.splitext(file.filename)
+                filename = secure_filename(f"{current_user.nickname}_{uuid.uuid4().hex}{ext}")
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename) # type: ignore
                 file.save(filepath)
                 media_path = f"/static/uploads/{filename}" 
@@ -299,13 +302,12 @@ def user_edit_profile():
             form.is_private.data = user.page_are_private # type: ignore
             form.avatar_url.data = user.avatar if user.avatar and not is_local_file(user.avatar) else "" # type: ignore
         if form.validate_on_submit():
-            media_path = None
+            media_path = user.avatar # type: ignore
             if form.avatar.data:
                 file = form.avatar.data
                 print(type(form.avatar))
                 if allowed_file(file.filename):
-                    ext = file.filename.rsplit('.', 1)[1].lower()
-                    filename = f"{current_user.nickname}_avatar.{ext}"
+                    filename = secure_filename(f"{current_user.nickname}_avatar")
                     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename) # type: ignore
                     old_avatars = [
                     f for f in os.listdir(app.config['UPLOAD_FOLDER']) # type: ignore
@@ -315,7 +317,7 @@ def user_edit_profile():
                         os.remove(os.path.join(app.config['UPLOAD_FOLDER'], old)) # type: ignore
                     file.save(filepath)
                     media_path = f"/static/uploads/{filename}"
-            elif form.media_url.data.strip(): # type: ignore
+            elif form.avatar_url.data.strip(): # type: ignore
                 media_path = form.avatar_url.data.strip()   # type: ignore
             
             user.message_for_other = form.message.data # type: ignore
@@ -358,7 +360,11 @@ def del_sub(name):
         list_of_subs.remove(name)
         sub.subscriptions = " ".join(list_of_subs) # type: ignore
         db_sess.commit()
-        return redirect(f'/user/{name}')
+        next_page = request.form.get('next')
+        if next_page and next_page in ['/subscritions', f'/user/{name}']:
+            return redirect(next_page)
+        else:
+            return redirect('/subscritions')
     except Exception as e:
         return "Пошло что-то не так. Повторите ещё раз."
     
@@ -381,8 +387,12 @@ def subs():
     sub = db_sess.query(Subs).filter(Subs.subscriber == current_user.nickname).first()
     if sub.subscriptions: # type: ignore
         list_of_subs = sub.subscriptions.split() # type: ignore
-        return render_template('subscriptions.html', header="Подписки", subs=list_of_subs)
+        users_data = db_sess.query(User.nickname, User.avatar).filter(User.nickname.in_(list_of_subs)).all()
+        avatars = {user.nickname: user.avatar for user in users_data}
+        db_sess.close()
+        return render_template('subscriptions.html', header="Подписки", subs=list_of_subs, avatars=avatars)
     else:
+        db_sess.close()
         return render_template('subscriptions.html', header="Подписки", subs=[])
     
 @app.route('/search/users', methods=['GET', 'POST']) # type: ignore

@@ -6,7 +6,7 @@ from wtforms.validators import DataRequired, Optional
 
 
 class EditUserForm(FlaskForm):
-    message = TextAreaField("Информация", validators=[DataRequired()])
+    message = TextAreaField("Информация")
     avatar = FileField('Новое фото профиля', validators=[
         FileAllowed(['jpg', 'png', 'jpeg', 'gif'], 'Только изображения формата jpg, png, gif')
     ])
