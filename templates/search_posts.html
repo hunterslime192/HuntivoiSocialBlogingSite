@@ -2,8 +2,7 @@
 
 {% block content %}
 <h1>Поиск постов</h1>
-<form action="" method="post">
-    {{ form.hidden_tag() }}
+<form method="get" action="{{ url_for('search_posts') }}">
     <p>
         {{ form.label.label }}<br>
         {{ form.label(class="form-control") }}<br>
@@ -41,8 +40,12 @@
         {% endfor %}
     </p>
     <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
-    {{message}}
 </form>
+
+{% if message %}
+    <p class="alert alert-info">{{ message }}</p>
+{% endif %}
+
 {% if posts %}
 {%for post in posts%}
 <div class="col-md6 border rounded">
@@ -80,16 +83,6 @@
         <p><a href="user/{{post.writer}}" title="Ссылка на автора"><img src="{{ avatar }}" alt="Аватар" style="width: 40px; height: 40px; object-fit: cover;"> {{post.writer}} </a></p>
     {% else %}
         <p><a href="user/{{post.writer}}" title="Ссылка на автора">{{post.writer}}</a></p>
-    {% endif %}
-    {% if (current_user.is_authenticated and current_user.nickname == post.writer) or (current_user.position_in_access == "Hunt" or current_user.position_in_access == "Admin")%}
-    <div>
-        <a href="/edit_post/{{ post.id }}" class="btn btn-warning">
-            Изменить
-        </a>
-        <a href="/post_delete/{{ post.id }}" class="btn btn-danger">
-            Удалить
-        </a>
-    </div>
     {% endif %}
 </div>
 {% endfor %}

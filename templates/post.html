@@ -36,7 +36,7 @@
         {{ form.media_url.label(class="form-label") }}
         {{ form.media_url(class="form-control") }}
         <small class="form-text text-muted">Или вставьте ссылку</small>
-        {% for error in form.media_file.errors %}
+        {% for error in form.media_url.errors %}
             <p class="alert alert-danger" role="alert">
                 {{ error }}
             </p>

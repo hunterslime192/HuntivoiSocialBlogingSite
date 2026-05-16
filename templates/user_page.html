@@ -7,7 +7,6 @@
 <h1>Страница {{ user.nickname }}</h1>
 
 {% if current_user.is_authenticated and current_user.nickname == user.nickname %}
-    <a href="/post_a_post" class="btn btn-secondary">Написать пост</a>
     <a href="/user/edit" class="btn btn-info">Изменить информацию</a>
 {% endif %}
 
@@ -65,12 +64,6 @@
                     <p><a href="user/{{item.writer}}" title="Ссылка на автора"><img src="{{ avatar }}" alt="Аватар" style="width: 40px; height: 40px; object-fit: cover;"> {{item.writer}} </a></p>
                 {% else %}
                     <p><a href="user/{{item.writer}}" title="Ссылка на автора">{{item.writer}}</a></p>
-                {% endif %}
-                {% if (current_user.is_authenticated and current_user.nickname == item.writer) or (current_user.position_in_access == "Hunt" or current_user.position_in_access == "Admin") %}
-                    <div>
-                        <a href="/edit_post/{{ item.id }}" class="btn btn-warning">Изменить</a>
-                        <a href="/post_delete/{{ item.id }}" class="btn btn-danger">Удалить</a>
-                    </div>
                 {% endif %}
             </div>
         {% endif %}

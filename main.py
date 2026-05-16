@@ -198,26 +198,25 @@ def add_post():
 @app.route('/edit_post/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_post(id):
+    db_sess = db_session.create_session()
+    post = db_sess.query(Posts).filter(Posts.id == id,
+                                          Posts.writer == current_user.nickname
+                                          ).first()
+    if not post:
+        db_sess.close()
+        abort(404)
+        
     form = PostsForm()
-    if request.method == "GET":
-        db_sess = db_session.create_session()
-        post = db_sess.query(Posts).filter(Posts.id == id,
-                                          Posts.writer == current_user.nickname
-                                          ).first()
-        if post:
-            form.label.data = post.label # type: ignore
-            form.sublabel.data = post.sublabel # type: ignore
-            form.content.data = post.text # type: ignore
-            form.is_private.data = post.is_private # type: ignore
-            form.media_url.data = post.additions if post.additions and not is_local_file(post.additions) else "" # type: ignore
+        
+    if request.method == "GET":   
+        form = PostsForm(obj=post)
+        if post.additions and not is_local_file(post.additions): # type: ignore
+            form.media_url.data = post.additions # type: ignore
         else:
-            abort(404)
+            form.media_url.data = ""
+        
     if form.validate_on_submit():
-        db_sess = db_session.create_session()
-        post = db_sess.query(Posts).filter(Posts.id == id,
-                                          Posts.writer == current_user.nickname
-                                          ).first()
-        media_path = post.additions # type: ignore
+        media_path = None
         if form.media_file.data:
             file = form.media_file.data
             if allowed_file(file.filename):
@@ -230,8 +229,14 @@ def edit_post(id):
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename) # type: ignore
                 file.save(filepath)
                 media_path = f"/static/uploads/{filename}" 
-        elif form.media_url.data.strip(): # type: ignore
-            media_path = form.media_url.data.strip()   # type: ignore
+        elif form.media_url.data: # type: ignore
+            if post.additions and is_local_file(post.additions): # type: ignore
+                old_path = os.path.join(app.root_path, post.additions[1:]) # type: ignore
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+            media_path = form.media_url.data.strip() # type: ignore
+        else:
+            media_path = post.additions   # type: ignore
         
         if post:
             post.label = form.label.data # type: ignore
@@ -240,6 +245,10 @@ def edit_post(id):
             post.text = form.content.data # type: ignore
             post.is_private = form.is_private.data# type: ignore
             db_sess.commit()
+            #next_page = request.form.get('next')
+            #if next_page in ['/', f'/user/{current_user.nickname}', "/search/posts"]:
+            #    return redirect(next_page)
+            #else:
             return redirect('/')
         else:
             abort(404)
@@ -261,6 +270,10 @@ def post_delete(id):
         db_sess.commit()
     else:
         abort(404)
+    #next_page = request.form.get('next')
+    #if next_page in ['/', f'/user/{current_user.nickname}', "'/search/posts'"]:
+    #    return redirect(next_page)
+    #else:
     return redirect('/')
 
 @app.route('/user')
@@ -386,7 +399,7 @@ def subs():
     db_sess = db_session.create_session()
     sub = db_sess.query(Subs).filter(Subs.subscriber == current_user.nickname).first()
     if sub.subscriptions: # type: ignore
-        list_of_subs = sub.subscriptions.split() # type: ignore
+        list_of_subs = [name for name in sub.subscriptions.split() if name] # type: ignore
         users_data = db_sess.query(User.nickname, User.avatar).filter(User.nickname.in_(list_of_subs)).all()
         avatars = {user.nickname: user.avatar for user in users_data}
         db_sess.close()
@@ -394,6 +407,29 @@ def subs():
     else:
         db_sess.close()
         return render_template('subscriptions.html', header="Подписки", subs=[])
+    
+@app.route("/subscritions/posts") # type: ignore
+@login_required
+def subs_posts():
+    db_sess = db_session.create_session()
+    sub = db_sess.query(Subs).filter(Subs.subscriber == current_user.nickname).first()
+    posts = []
+    list_of_subs = [name for name in sub.subscriptions.split() if name] # type: ignore
+    query = db_sess.query(Posts).join(User, User.nickname == Posts.writer)
+    if not sub or not list_of_subs:
+        posts = []
+    else:
+        list_of_subs = sub.subscriptions.split()
+        posts = query.filter(
+        Posts.writer.in_(list_of_subs),
+        (Posts.writer == current_user.nickname) | (Posts.is_private == False),
+        (User.page_are_private == False) | (User.nickname == current_user.nickname)
+        ).all()
+    nicknames = {post.writer for post in posts}
+    users_data = db_sess.query(User.nickname, User.avatar).filter(User.nickname.in_(nicknames)).all()
+    avatars = {user.nickname: user.avatar for user in users_data}
+    db_sess.close()
+    return render_template('subs_posts.html', header="Подписки", posts=posts[::-1], avatars=avatars)
     
 @app.route('/search/users', methods=['GET', 'POST']) # type: ignore
 @login_required
@@ -421,13 +457,21 @@ def search_users():
 @app.route('/search/posts', methods=['GET', 'POST']) # type: ignore
 @login_required
 def search_posts():
-    form = SearchPostsForm()
+    form = SearchPostsForm(request.args)
     posts = []
+    message = None
+    avatars = {}
     try:
-        if form.validate_on_submit():
-            db_sess = db_session.create_session()
-            query = db_sess.query(Posts)
+        db_sess = db_session.create_session()
+        query = db_sess.query(Posts)
 
+        has_search_params = any([
+            request.args.get('label'),
+            request.args.get('sublabel'),
+            request.args.get('content'),
+            request.args.get('writer')
+        ])
+        if has_search_params:
             if form.label.data:
                 query = query.filter(Posts.label.contains(form.label.data))
 
@@ -439,29 +483,35 @@ def search_posts():
 
             if form.writer.data:
                 query = query.filter(Posts.writer.contains(form.writer.data))
-            query = query.join(
-                User, User.nickname == Posts.writer
-            ).filter(
-            Posts.is_private == False,
-            User.page_are_private == False)
+            query = query.join(User, User.nickname == Posts.writer).filter(
+                    (Posts.is_private == False) | (Posts.writer == current_user.nickname),
+                   (User.page_are_private == False) | (User.nickname == current_user.nickname)
+                )
 
             posts = query.all()
             
             nicknames = {post.writer for post in posts}
-    
             users_data = db_sess.query(User.nickname, User.avatar).filter(User.nickname.in_(nicknames)).all()
             avatars = {user.nickname: user.avatar for user in users_data}
-            return render_template('search_posts.html',
-                            header="Поиск постов",
-                            form=form,
-                            posts=posts, avatars=avatars)
-    except Exception as e:
-        return render_template('search_posts.html',
-                            header="Поиск постов",
-                            form=form,
-                            message="Пошло что-то не так")
-    return render_template('search_posts.html', header="Поиск постов", form=form)
+
+            if form.is_submitted() and not posts:
+                message = "Ничего не найдено."
+        else:
+            pass
                 
+        db_sess.close()
+        
+        return render_template(
+        'search_posts.html',
+        form=form,
+        posts=posts,
+        avatars=avatars,
+        message=message
+        )
+    except Exception as e:
+        print(f"Ошибка в поиске постов: {e}")
+        db_sess.close()
+        return render_template('search_posts.html', form=form, message="Пошло что-то не так")
 
 @app.route('/logout')
 @login_required
