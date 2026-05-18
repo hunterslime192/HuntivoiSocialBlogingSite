@@ -21,7 +21,6 @@ PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(PROJECT_ROOT, 'static', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm', 'mov', 'avi', 'mp3', 'wav', 'ogg'}
 
-db_path = os.path.join(os.path.dirname(__file__), 'db', 'all_date.db')
 
 app = Flask(__name__)
 
@@ -39,11 +38,11 @@ def allowed_file(filename):
 def is_local_file(url):
     return url and url.startswith('/static/uploads/')
 
-def notify_admin(user):
+def notify_admin(user_id):
     try:
         token = secrets.token_urlsafe(32)
         db_sess = db_session.create_session()
-        user = db_sess.query(User).get(user.id)
+        user = db_sess.query(User).get(user_id)
         if not user:
             return
 
