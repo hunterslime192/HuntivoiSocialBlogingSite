@@ -20,12 +20,11 @@
             <button type="submit" class="btn btn-danger">Отписаться</button>
             </form>
         {% endif %}
-    {% elif current_user.nickname == user.nickname%}
-        <h3>Информация о себе:</h3>
-        <div class="alert alert-info" role="alert">
-            {{ user.message_for_other or "Пока нет информации" }}
-        </div>  
     {% endif %}
+    <h3>Информация о себе:</h3>
+    <div class="alert alert-info" role="alert">
+            {{ user.message_for_other or "Пока нет информации" }}
+    </div>    
 {% endif %}
 
 <h2>Посты {{ user.nickname }}:</h2>

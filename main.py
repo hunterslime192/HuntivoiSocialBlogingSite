@@ -200,7 +200,7 @@ def add_post():
 def edit_post(id):
     db_sess = db_session.create_session()
     post = db_sess.query(Posts).filter(Posts.id == id,
-                                          Posts.writer == current_user.nickname
+                                          Posts.writer == current_user.nickname or (current_user.position_in_access == "Hunt" or current_user.position_in_access == "Admin")
                                           ).first()
     if not post:
         db_sess.close()
@@ -261,8 +261,8 @@ def edit_post(id):
 def post_delete(id):
     db_sess = db_session.create_session()
     post = db_sess.query(Posts).filter(Posts.id == id,
-                                      Posts.writer == current_user.nickname
-                                      ).first()
+                                              Posts.writer == current_user.nickname or (current_user.position_in_access == "Hunt" or current_user.position_in_access == "Admin")
+                                              ).first()
     if post:
         if post.additions and post.additions.startswith('/static/uploads/'): # type: ignore
             os.remove(os.path.join(app.root_path, post.additions[1:])) # type: ignore
